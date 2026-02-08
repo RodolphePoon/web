@@ -1,11 +1,11 @@
 /*global chrome*/
 import { sha256 } from 'js-sha256';
 
-const SERVER_URL = 'https://disbox-server.fly.dev';
+const SERVER_URL = 'http://localhost:5000'//'https://disbox-server.fly.dev';
 export const FILE_DELIMITER = '/';
-const FILE_CHUNK_SIZE = 25 * 1024 * 1023 // Almost 25MB
+const FILE_CHUNK_SIZE = 10 * 1024 * 1023 // Almost 10MB
 
-async function sleep(ms) {
+export async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -25,7 +25,7 @@ async function* readFile(file, chunkSize) {
 async function fetchUrlFromExtension(url) {
     return new Promise((resolve, reject) => {
         try {
-            chrome.runtime.sendMessage("jklpfhklkhbfgeencifbmkoiaokeieah", { message: {url: url } }, response => {
+            chrome.runtime.sendMessage("jklpfhklkhbfgeencifbmkoiaokeieah", { message: { url: url } }, response => {
                 if (!response || !("data" in response)) {
                     resolve(null);
                 }
@@ -39,7 +39,7 @@ async function fetchUrlFromExtension(url) {
 }
 
 async function fetchUrlFromProxy(url) {
-    return await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);  
+    return await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
 }
 
 async function fetchUrl(url) {
@@ -51,10 +51,10 @@ async function fetchUrl(url) {
 }
 
 
-export async function downloadFromAttachmentUrls(attachmentUrls, writeStream, onProgress = null, fileSize=-1) {
+export async function downloadFromAttachmentUrls(attachmentUrls, writeStream, onProgress = null, fileSize = -1) {
     let bytesDownloaded = 0;
-    if (onProgress) { 
-        onProgress (0, fileSize);
+    if (onProgress) {
+        onProgress(0, fileSize);
     }
     for (let attachmentUrl of attachmentUrls) {
         const blob = await fetchUrl(attachmentUrl);
@@ -76,7 +76,7 @@ class DiscordWebhookClient {
         this.rateLimitWaits = {};
     }
 
-    async fetchFromApi(path, {type, method, body}) {
+    async fetchFromApi(path, { type, method, body }) {
         if (this.rateLimitWaits[type] > 0) {
             console.log(`Waiting ${this.rateLimitWaits[type]}ms for rate limit to reset`)
             await sleep(this.rateLimitWaits[type]);
@@ -96,7 +96,7 @@ class DiscordWebhookClient {
             const retryAfter = responseJson.retry_after;
             this.rateLimitWaits[type] = (retryAfter) * 1000;
             console.log("Rate limit exceeded, retrying");
-            return await this.fetchFromApi(path, {method, body, type});
+            return await this.fetchFromApi(path, { method, body, type });
         }
         if (status >= 400) {
             throw new Error(`Failed to ${type} with status ${status}: ${await response.text()}`);
@@ -155,8 +155,12 @@ class DiscordFileStorage {
         if (onProgress) {
             onProgress(0, sourceFile.size);
         }
+        const [ext] = sourceFile.name.match(/\.[^\.]*$/)
+        const filename = sourceFile.name.replace(ext, '')
+
+        const splitted = sourceFile.size > FILE_CHUNK_SIZE
         for await (const chunk of readFile(sourceFile, FILE_CHUNK_SIZE)) {
-            const result = await this.webhookClient.sendAttachment(`${namePrefix}_${index}`, new Blob([chunk]));
+            const result = await this.webhookClient.sendAttachment(`${namePrefix}_${filename}${splitted ? `_part_${index}` : ''}${ext}`, new Blob([chunk]));
             messageIds.push(result.id);
             uploadedBytes += chunk.byteLength;
             index++;
@@ -168,7 +172,7 @@ class DiscordFileStorage {
     }
 
 
-    async download(messageIds, writeStream, onProgress = null, fileSize=-1) {
+    async download(messageIds, writeStream, onProgress = null, fileSize = -1) {
         const attachmentUrls = await this.getAttachmentUrls(messageIds);
         await downloadFromAttachmentUrls(attachmentUrls, writeStream, onProgress, fileSize);
     }

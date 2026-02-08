@@ -17,7 +17,7 @@ function Setup() {
         <div className="App App-header" style={{ color: "black" }}>
             <div style={{ backgroundColor: "#FCFCFC", width: "66%", height: "90vh" }}>
                 <h1 style={{ fontSize: "6rem" }} className='mt-3' >
-                    <b>Setup</b>
+                    <b>Setupppp</b>
                 </h1>
                 <h1 style={{ fontSize: "2rem" }}>
                     <b>Just a few steps and we're ready to go.</b>

@@ -60,6 +60,7 @@ function App() {
     const [currentAction, setCurrentAction] = useState("");
     const [showProgress, setShowProgress] = useState(false);
     const [progressValue, setProgressValue] = useState(-1);
+    const [filesToUpload, setFilesToUpload] = useState(0)
 
     useEffect(() => {
         const webhookUrl = localStorage.getItem("webhookUrl");
@@ -77,18 +78,18 @@ function App() {
 
 
     useEffect(() => {
-        if (progressValue === 100 || progressValue === -1 ) {
+        if (filesToUpload === 0 && (progressValue === 100 || progressValue === -1)) {
             setTimeout(() => {
                 setShowProgress(false);
+                setCurrentAction("");
             }, 1500);
             setTimeout(() => {
                 setProgressValue(-1);
-                setCurrentAction("");
             }, 1600);
         } else {
             setShowProgress(true);
         }
-    }, [progressValue]);
+    }, [progressValue, filesToUpload]);
 
 
     const getRowById = (id) => {
@@ -122,7 +123,7 @@ function App() {
 
 
     const addRow = (row) => {
-        setRows([...rows, row]);
+        setRows((prevRows) => [...prevRows, row]);
     }
 
 
@@ -196,19 +197,23 @@ function App() {
         if (currentAction) {
             return;
         }
-        const file = params.target.files[0];
-        const fileName = await getAvailableFileName(fileManager, path, file.name);
-        setCurrentAction(`Uploading ${fileName}`);
-        const filePath = `${path}${FILE_DELIMITER}${fileName}`;
-        try {
-            await fileManager.uploadFile(filePath, file, onProgress);
-            const row = fileManager.getFile(filePath);
-            addRow(row);
-        } catch (e) {
-            alert(`Failed to upload file: ${e}`);
-            throw e;
-        } finally {
-            params.target.value = null;
+        const files = Array.from(params.target.files)
+        setFilesToUpload(files.length)
+        for (const file of files) {
+            const fileName = await getAvailableFileName(fileManager, path, file.name);
+            setCurrentAction(`Uploading ${fileName}`);
+            const filePath = `${path}${FILE_DELIMITER}${fileName}`;
+            try {
+                await fileManager.uploadFile(filePath, file, onProgress);
+                const row = fileManager.getFile(filePath);
+                addRow(row);
+                setFilesToUpload(prevFileToUpload => prevFileToUpload - 1)
+            } catch (e) {
+                alert(`Failed to upload file: ${e}`);
+                throw e;
+            } finally {
+                params.target.value = null;
+            }
         }
     }
 
@@ -338,8 +343,8 @@ function App() {
                         </Tooltip>
                     </div>
                     <div className='m-2'>
-                        <input id="uploadFile" type="file" style={{ display: "none" }} onChange={onUploadFileClick}></input>
-                        <BsButton variant="outline-primary" onClick={() => { document.getElementById("uploadFile").click() }} disabled={(currentAction !== "" || path === null)}>Upload file</BsButton>
+                        <input id="uploadFile" type="file" style={{ display: "none" }} onChange={onUploadFileClick} multiple></input>
+                        <BsButton variant="outline-primary" onClick={() => { document.getElementById("uploadFile").click() }} disabled={(currentAction !== "" || path === null)}>Upload files</BsButton>
                         <BsButton variant="outline-primary" style={{ marginLeft: "0.25rem" }} onClick={onNewFolderClick} disabled={(currentAction !== "" || path === null)}>New Folder</BsButton>
                     </div>
                     <PathParts path={path} fileManager={fileManager} showDirectory={showDirectory} />
