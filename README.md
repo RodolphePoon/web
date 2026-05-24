@@ -68,5 +68,3 @@ There are 2 main ways to solve this, and because both are viable and fit for dif
 - Proxy: All downloaded are forwarded to an external proxy, which downloads the files and sends them back to the client. Disbox uses the [allOrigins](https://allorigins.win) proxy for this. This option is less secure as it exposes your data to the proxy. It also decreases download speeds as the proxy's server may be slower than Discord' servers.
 
 - Browser extension: Instead of forwarding the requests to an external source, Disbox uses an extension to download the files. This is the recommended option, but it requires a browser extension to be installed by every user, which is not always an option.
-
-https://discord.com/api/webhooks/1314995484552593408/w0nP5A9XxunWMW6wU_VHO7R4THGarUrqK3YZDBcId5UIsv2inx6k6lwiJ8akBKRPq7vx
