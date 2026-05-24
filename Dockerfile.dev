@@ -1,0 +1,17 @@
+FROM node:18-slim
+
+WORKDIR /app
+
+# Install dependencies first for caching
+COPY package*.json ./
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Expose port (default for react-scripts is 3000)
+EXPOSE 3000
+
+# Start in development mode
+# Assuming 'start' script exists in package.json from previous view_file
+CMD ["npm", "start"]
